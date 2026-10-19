@@ -1,6 +1,6 @@
 # Frontend image (used by docker-compose): static SPA served by unprivileged nginx on :8080,
 # proxying /api and /health to the backend service so the browser sees one origin.
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /web
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
