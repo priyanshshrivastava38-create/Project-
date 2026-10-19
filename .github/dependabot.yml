@@ -1,16 +1,36 @@
+# One grouped PR per ecosystem and schedule; major versions (React 19, Node 26, ...) are skipped
+# because they need manual migration and testing. Upgrade those deliberately.
 version: 2
 updates:
   - package-ecosystem: pip
     directory: /backend
     schedule: { interval: weekly }
+    groups:
+      python: { patterns: ["*"] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
     groups:
-      dev-dependencies: { dependency-type: development }
+      npm: { patterns: ["*"] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directories: [/, /backend, /frontend]
     schedule: { interval: monthly }
+    groups:
+      docker: { patterns: ["*"] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
+    groups:
+      actions: { patterns: ["*"] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
