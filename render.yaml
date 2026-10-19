@@ -1,11 +1,7 @@
-# Render Blueprint: one PostgreSQL database + one Docker web service (API + built SPA).
-# Deploy: Render dashboard -> New -> Blueprint -> select this repository.
-databases:
-  - name: metalflow-db
-    databaseName: metalflow
-    user: metalflow
-    plan: free
-
+# Render Blueprint: one Docker web service (API + built SPA) using an external PostgreSQL
+# database (e.g. Neon's free tier; Render's free database is deleted after 30 days).
+# Deploy: Render dashboard -> New -> Blueprint -> select this repository; paste the database
+# connection string when prompted for DATABASE_URL. See docs/deployment.md.
 services:
   - type: web
     name: metalflow-erp
@@ -15,10 +11,8 @@ services:
     healthCheckPath: /health/ready
     autoDeploy: true
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: metalflow-db
-          property: connectionString
+      - key: DATABASE_URL # postgresql://user:password@host/db?sslmode=require
+        sync: false
       - key: ENVIRONMENT
         value: production
       - key: JWT_SECRET_KEY
