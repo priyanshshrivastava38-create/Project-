@@ -1,6 +1,7 @@
 # Single-service production image (used by Render): builds the React SPA and serves it from the
 # FastAPI app, so the browser talks to one origin (httpOnly refresh cookie, no CORS).
-FROM node:20-alpine AS frontend
+# Static build output is architecture-independent: build it natively even for multi-arch images.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
