@@ -1,6 +1,7 @@
 #!/bin/sh
-# Container entrypoint: apply migrations, seed demo data or bootstrap reference data, then serve.
+# Container entrypoint: check config + database, apply migrations, seed demo data or bootstrap reference data, then serve.
 set -e
+python -m scripts.preflight
 echo "Applying database migrations..."
 alembic upgrade head
 if [ "${SEED_DEMO_DATA:-false}" = "true" ]; then

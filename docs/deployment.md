@@ -1,28 +1,31 @@
 # Deployment
 
-## Option A: Render + Neon (Blueprint, free tier)
+## Option A: Render (Blueprint, one click)
 
-`render.yaml` provisions one Docker web service built from the root `Dockerfile` (React build +
-FastAPI) and expects an external PostgreSQL database such as Neon (free, does not expire). On start
-the container runs `alembic upgrade head`, then either seeds demo data (`SEED_DEMO_DATA=true`, empty
-DB only) or runs `python -m scripts.bootstrap`, which creates missing production stages, default
-warehouses and, on an empty `users` table, the first admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`
-(start fails with a clear message if they are missing). Then uvicorn starts on `$PORT`.
+`render.yaml` provisions a PostgreSQL database and one Docker web service built from the root
+`Dockerfile` (React build + FastAPI), wired together automatically. On start the container runs
+`python -m scripts.preflight` (validates settings, waits for the database, prints a plain-English fix
+on failure), `alembic upgrade head`, then either seeds demo data (`SEED_DEMO_DATA=true`, empty DB
+only) or runs `python -m scripts.bootstrap`, which creates production stages, default warehouses and,
+on an empty `users` table, the first admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`. Then uvicorn starts.
 
-1. Neon (neon.tech) → create a project → copy the connection string
-   (`postgresql://user:password@host/dbname?sslmode=require`).
-2. Render dashboard → **New → Blueprint** → select the repo → Render reads `render.yaml`.
-3. Fill in the prompted values: `DATABASE_URL` (the Neon string), `ADMIN_EMAIL`,
-   `ADMIN_PASSWORD` (≥12 chars) → **Apply**.
-4. Wait for the first deploy (≈5–8 min). The health check is `/health/ready`.
-5. Open the service URL, sign in as that admin and create the other users under *Admin → Users*.
-   Then delete `ADMIN_PASSWORD` from the service's environment (it is only read while no users exist).
-6. For a throwaway demo instead: set `SEED_DEMO_DATA=true` and a `DEMO_PASSWORD` before the first deploy.
-   Demo accounts: `admin@`, `sales@`, `inventory@`, `production@`, `quality@`, `dispatch@`,
-   `management@metalflow.example`.
+1. Render dashboard → **New → Blueprint** → select the repo.
+2. Enter `ADMIN_EMAIL` and `ADMIN_PASSWORD` (≥12 chars) → **Apply**.
+3. Wait for the first deploy (≈5–8 min; health check `/health/ready`).
+4. Open the service URL, sign in as that admin and create the other users under *Admin → Users*.
+   Then delete `ADMIN_PASSWORD` from the service's environment (only read while no users exist).
 
-Free-tier caveats: the Render web service sleeps after 15 min idle (first request ≈1 min), and
-Neon's free tier has limited storage and short backup history. Use paid plans for real business data.
+If the deploy fails, the log shows a `STARTUP CHECK FAILED` box with the reason and the fix.
+
+**Free-tier caveats:** the web service sleeps after 15 min idle (first request ≈1 min), and Render's
+**free PostgreSQL is deleted 30 days after creation**. Before then, upgrade it (dashboard →
+`metalflow-db` → Upgrade) or move to another Postgres such as Neon: remove the `databases` block from
+`render.yaml` and change `DATABASE_URL` to `sync: false`, then paste the connection string (a pasted
+`psql '...'` command or missing `?sslmode=require` for Neon is corrected automatically).
+
+For a throwaway demo instead: set `SEED_DEMO_DATA=true` and a `DEMO_PASSWORD` before the first deploy.
+Demo accounts: `admin@`, `sales@`, `inventory@`, `production@`, `quality@`, `dispatch@`,
+`management@metalflow.example`.
 
 Optional LLM: set `AI_PROVIDER` (`openai` or `anthropic`), `AI_API_KEY`, optionally `AI_MODEL`/`AI_BASE_URL`.
 

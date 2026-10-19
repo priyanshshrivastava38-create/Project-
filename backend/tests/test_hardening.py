@@ -95,3 +95,22 @@ def test_blank_enable_api_docs_means_default(monkeypatch):
     monkeypatch.setenv("ENABLE_API_DOCS", "")
     monkeypatch.setenv("ENVIRONMENT", "production")
     assert Settings(_env_file=None).api_docs_enabled is False
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("postgres://u:p@h:5432/db", "postgresql+psycopg://u:p@h:5432/db"),
+        ("  'postgresql://u:p@h/db'\n", "postgresql+psycopg://u:p@h/db"),
+        (
+            "psql 'postgresql://u:p@ep-1.neon.tech/neondb?sslmode=require'",
+            "postgresql+psycopg://u:p@ep-1.neon.tech/neondb?sslmode=require",
+        ),
+        ("postgresql://u:p@ep-1.neon.tech/neondb", "postgresql+psycopg://u:p@ep-1.neon.tech/neondb?sslmode=require"),
+    ],
+)
+def test_database_url_paste_mistakes_are_corrected(monkeypatch, raw, expected):
+    from app.core.config import Settings
+
+    monkeypatch.setenv("DATABASE_URL", raw)
+    assert Settings(_env_file=None).database_url == expected

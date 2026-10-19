@@ -50,6 +50,15 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def normalise_db_url(cls, v: str) -> str:
+        # Forgive common copy-paste mistakes: surrounding whitespace/quotes and a pasted
+        # `psql 'postgresql://...'` command (Neon's "Connect" dialog offers both forms).
+        v = v.strip()
+        if v.startswith("psql "):
+            v = v[len("psql ") :].strip()
+        v = v.strip("'\"").strip()
+        # Neon only accepts TLS connections.
+        if ".neon.tech" in v and "sslmode=" not in v:
+            v += ("&" if "?" in v else "?") + "sslmode=require"
         # Render/Heroku style URLs use postgres:// or postgresql://; force the psycopg3 driver.
         if v.startswith("postgres://"):
             v = "postgresql://" + v[len("postgres://") :]
