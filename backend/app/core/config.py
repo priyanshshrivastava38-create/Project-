@@ -1,9 +1,11 @@
 """Application settings loaded from environment variables."""
 
+import json
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -20,7 +22,9 @@ class Settings(BaseSettings):
     refresh_cookie_secure: bool = False
     refresh_cookie_samesite: str = "strict"
 
-    cors_origins: list[str] = ["http://localhost:5173"]
+    # Comma-separated ("https://a.com,https://b.com"), a JSON list, or empty for same-origin only.
+    # NoDecode: let split_origins parse the raw string instead of pydantic-settings' JSON decoding.
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
     enable_api_docs: bool | None = None  # default: on outside production
 
     # Failed-login throttling (see app/core/ratelimit.py)
@@ -56,9 +60,16 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def split_origins(cls, v: object) -> object:
-        if isinstance(v, str) and not v.strip().startswith("["):
+        if isinstance(v, str):
+            if v.strip().startswith("["):
+                return json.loads(v)
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
+
+    @field_validator("enable_api_docs", mode="before")
+    @classmethod
+    def blank_is_unset(cls, v: object) -> object:
+        return None if isinstance(v, str) and not v.strip() else v
 
     @property
     def is_production(self) -> bool:

@@ -72,3 +72,26 @@ def test_bootstrap_creates_admin_and_reference_data_idempotently(bootstrap_db, d
     codes = set(db.execute(select(StageDefinition.code)).scalars())
     assert {"MACHINING", "ASSEMBLY", "CUTTING"} <= codes
     assert db.execute(select(Warehouse.id)).first()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("", []),
+        ("https://a.example, https://b.example", ["https://a.example", "https://b.example"]),
+        ('["https://a.example"]', ["https://a.example"]),
+    ],
+)
+def test_cors_origins_env_formats(monkeypatch, raw, expected):
+    from app.core.config import Settings
+
+    monkeypatch.setenv("CORS_ORIGINS", raw)
+    assert Settings(_env_file=None).cors_origins == expected
+
+
+def test_blank_enable_api_docs_means_default(monkeypatch):
+    from app.core.config import Settings
+
+    monkeypatch.setenv("ENABLE_API_DOCS", "")
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    assert Settings(_env_file=None).api_docs_enabled is False
